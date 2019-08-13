@@ -61,3 +61,17 @@ Make sure you have commited your changes and push to heroku
 ```sh
 $ git push heroku master
 ```
+
+Twilio / Python Flask Documentacion:
+
+https://www.twilio.com/docs/sms/quickstart/python
+
+use
+
+    pipenv  install twilio
+
+instead of
+
+    pip install twilio
+
+To note- do not push information contained on main.py without removing- this would be otherwise become public

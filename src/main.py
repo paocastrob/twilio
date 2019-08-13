@@ -8,6 +8,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from models import db, Person
+from twilio.rest import Client #con pipenv run deploy se descarga
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -17,13 +18,58 @@ MIGRATE = Migrate(app, db)
 db.init_app(app)
 CORS(app)
 
+queue = Queue(mode="FIFO")
+
 @app.errorhandler(APIException)
 def handle_invalid_usage(error):
     return jsonify(error.to_dict()), error.status_code
 
-@app.route('/')
-def sitemap():
-    return generate_sitemap(app)
+@app.route('/new', methods=['POST'])
+def addQueue():
+   user = request.get_json()
+   queue.enqueue(user)
+   body = request.get_json()
+
+    if body is None:
+       raise APIException("Its empty", status_code=400)
+   if 'name' not in body:
+       raise APIException('You need to add name', status_code=400)
+   if 'phone' not in body:
+       raise APIException('you need to specify the phone', status_code=400)
+   queue.enqueue(body)
+   return "ok", 200
+
+return jsonify(user)
+@app.route('/next', methods=['GET'])
+def deleteQueue():
+   queue.dequeue()
+   return jsonify(queue.get_queue())
+@app.route('/all', methods=['GET'])
+def getAllFromList():
+   return jsonify(queue.get_queue())
+
+
+# Download the helper library from https://www.twilio.com/docs/python/install
+
+@app.route('/process', methods=['GET'])
+def process():
+
+# Your Account Sid and Auth Token from twilio.com/console
+# DANGER! This is insecure. See http://twil.io/secure
+    account_sid = 'ugfghjiuytrdfghjiuytresdfghuytr' #copiar el ID que me dio Twilio al crear mi cuenta
+    auth_token = ';lkjhtsdszxcghjkl;[piyuesdzxfgh'    #este token tambien
+    client = Client(account_sid, auth_token)
+
+    message = client.messages \
+        .create(
+        body="Join Earth's mightiest heroes. Like Kevin Bacon.", #este mensaje se puede modificar
+        from_='+12222222222', #este numero me lo dio Twilio
+        to='+13333333333'     #aqui iria el del cliente donde se enviara el mensaje
+    )
+
+    # print(message.sid)
+    return ('ciao'), 200
+
 
 @app.route('/person', methods=['POST', 'GET'])
 def handle_person():
